@@ -8,7 +8,7 @@ COPY frontend/out ./frontend/out
 
 RUN echo $(ls -l) 
 RUN echo $(go env)
-RUN go env -w GOPROXY="https://goproxy.cn,direct"
+# RUN go env -w GOPROXY="https://goproxy.cn,direct"
 RUN go mod download
 RUN go build -o /app/docker-chatbot cmd/main.go
 
