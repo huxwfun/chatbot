@@ -9,6 +9,10 @@
 
 ## How to use
 docker run -p 8080:8080 $(docker build -q .)
+```
+No docker?
+go run cmd/main.go
+```
 
 http://localhost:8080
 
@@ -18,8 +22,8 @@ Press "Trigger sample review flow!" button on the right side to start bot review
 
 Separation of concerns:
 - Define workflow using directed cyclic graph
-- Use WorkflowExecution to represent the execution state of workflow, per customer
-- Using an Executor to run workflow executions
+- Use WorkflowExecution to represent the execution state of workflow. per workflow, per execution, per customer
+- Use an runtime Executor to run workflow executions
 
 Take review workflow for example:
 
@@ -32,6 +36,8 @@ Take review workflow for example:
 7. Nothing shall happen until the user answers the question. The ReviewInboundMsgListener catches user's message, and triggers next action based on analysis result of that message.
 
 ## Websocket
+[source code link](https://github.com/huxwfun/chatbot/tree/main/internal/ws)
+
 Copied from gorilla/websocket examples.
 
 Basiccaly, once any client connects, the server creates a "client" instance, which uses 2 goroutines, 1 for reading, 1 for writing.
@@ -40,17 +46,20 @@ The reading goroutine sends msg to event bus directly
 
 The writing goroutine watches a channel for msg to be sent to client on the other side of the websocket
 
-Server registers another listener to event bus. Messages catched by this listener, classified by clients, and send to clients' writing goroutines through their channels
+Server registers another listener to the event bus. Messages catched by this listener, classified by clients, and send to clients' writing goroutines through their channels
 
 ## User input processing
+[source code link](https://github.com/huxwfun/chatbot/tree/main/internal/nlp)
 
 Rather simple processing chain.
 
 ## In memory event bus
+[source code link](https://github.com/huxwfun/chatbot/tree/main/internal/event)
 
 Copied somewhere as a mock of a real event queue with delivery guarantees.
 
 ## UI
+[source code link](https://github.com/huxwfun/chatbot/tree/main/frontend)
 Typescript
 
 React.js
