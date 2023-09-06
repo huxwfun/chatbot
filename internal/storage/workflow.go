@@ -48,15 +48,6 @@ func (w *WorkflowExecutionStorage) FindActiveByCustomer(ctx context.Context, cus
 	}
 	return result
 }
-func (w *WorkflowExecutionStorage) FindByWorkflowAndCustomer(ctx context.Context, workflowId, customerId string) []models.WorkflowExecution {
-	result := make([]models.WorkflowExecution, 0, len(w.storage))
-	for _, v := range w.storage {
-		if v.WorkflowId == workflowId && v.CustomerId == customerId {
-			result = append(result, v)
-		}
-	}
-	return result
-}
 
 // end WorkflowExecutionStorage
 

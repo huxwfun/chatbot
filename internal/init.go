@@ -45,6 +45,10 @@ func InitData(
 		storage.Chat.Save(ctx, chat.Id, chat)
 	}
 	log.Printf("data initiated, 3 users, 1 bot and 3 chats")
+	id := REVIEW_WORKFLOW_ID
+	workflow := review.ReviewWorkflow
+	workflow.Id = id
+	storage.Workflow.Save(ctx, id, workflow)
 	return CHATBOG
 }
 
@@ -59,12 +63,24 @@ func RegisterWorkflow(
 	ctx context.Context,
 	executor *workflow.WorkflowExecutor,
 	nlpService *nlp.NlpService,
-	storage *storage.Storage) models.Workflow {
-	id := REVIEW_WORKFLOW_ID
-	workflow := review.CreateReviewWorkflow(id, executor, nlpService)
-
-	storage.Workflow.Save(ctx, id, workflow)
-	return workflow
+	storage *storage.Storage) {
+	workflows := storage.Workflow.GetAll(ctx)
+	for _, wf := range workflows {
+		if wf.InboundMsgListener == "review.ReviewInboundMsgListener" {
+			inboundMsgListener := review.ReviewInboundMsgListener{
+				Executor:   executor,
+				NlpService: nlpService,
+			}
+			executor.RegisterInboundMsgListener(wf.Id, inboundMsgListener)
+		}
+		if wf.StateListener == "review.ReviewStateListener" {
+			stateListener := review.ReviewStateListener{
+				Executor:   executor,
+				NlpService: nlpService,
+			}
+			executor.RegisterStateListener(wf.Id, stateListener)
+		}
+	}
 }
 
 func InitWebsocketServer(
@@ -72,15 +88,13 @@ func InitWebsocketServer(
 	dispatcher *event.Dispatcher,
 	storage *storage.Storage,
 	executor *workflow.WorkflowExecutor,
-	reviewWorkflow models.Workflow,
 	reviewBot models.User,
 ) *ws.WsServer {
-	log.Printf("init %s %s", reviewWorkflow.Id, reviewBot.Id)
 	handleReview := func(w http.ResponseWriter, r *http.Request) {
 		ctx := context.Background()
 		userId := r.URL.Query().Get("authentication")
 		chat := storage.Chat.FindByUserAndBot(ctx, userId, reviewBot.Id)
-		executionId := executor.CreateExecution(ctx, reviewWorkflow.Id, userId, reviewBot.Id, chat.Id)
+		executionId := executor.CreateExecution(ctx, REVIEW_WORKFLOW_ID, userId, reviewBot.Id, chat.Id)
 		log.Printf("start review execution %s", executionId)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
@@ -109,7 +123,7 @@ func InitWebsocketServer(
 						output = output + fmt.Sprintf("msg (%s) is missing\n", msg.Id)
 					}
 				}
-				output = output + fmt.Sprintf("from state(%s) to state(%s) action(%s, payload: %v)\n\n", log.StateBefore, log.StateAfter, log.Action, log.ActionPayload)
+				output = output + fmt.Sprintf("state: \"%s\"-->\"%s\" action(%s, payload: %v)\n\n", log.StateBefore, log.StateAfter, log.Action, log.ActionPayload)
 			}
 			output = output + fmt.Sprintf("----- end execution current state(%s) -----\n\n", exec.CurrentState)
 

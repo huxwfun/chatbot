@@ -26,12 +26,12 @@ func NewWorkflowExecutor(
 	}
 }
 
-func (e *WorkflowExecutor) RegisterStateListener(workflowId string, l event.Listener) {
-	e.Dispatcher.Register(l, generateStateEventName(workflowId))
+func (e *WorkflowExecutor) RegisterStateListener(workflowId string, l StateListener) {
+	e.Dispatcher.Register(l.Listen, generateStateEventName(workflowId))
 }
 
-func (e *WorkflowExecutor) RegisterInboundMsgListener(workflowId string, l event.Listener) {
-	e.Dispatcher.Register(l, generateInboundMsgEventName(workflowId))
+func (e *WorkflowExecutor) RegisterInboundMsgListener(workflowId string, l InboundMsgListener) {
+	e.Dispatcher.Register(l.Listen, generateInboundMsgEventName(workflowId))
 }
 
 func (e *WorkflowExecutor) listenForInboundMsg() {
@@ -42,7 +42,7 @@ func (e *WorkflowExecutor) listenForInboundMsg() {
 
 			executions := e.Storage.WorkflowExecution.FindActiveByCustomer(ctx, msg.From)
 			for _, exec := range executions {
-				e.Dispatcher.Dispatch(generateInboundMsgEventName(exec.WorkflowId), msg)
+				e.Dispatcher.Dispatch(generateInboundMsgEventName(exec.WorkflowId), InboundMsgEvent{Message: msg, ExecutionId: exec.Id})
 			}
 		}
 	}, ws.BOT_CHAT_INBOUND_MSG)
@@ -61,9 +61,11 @@ func (e *WorkflowExecutor) Action(
 	}
 	before := exec.CurrentState
 	edge := workflow.Graph.GetEdge(before, action)
-	if edge != nil {
-		exec.CurrentState = edge.To
+	if edge == nil {
+		log.Printf("error action %s cannot happen on state: %s", action, before)
+		return
 	}
+	exec.CurrentState = edge.To
 	log := models.WorkflowLog{
 		Id:            utils.GenerateId(),
 		ExecutionId:   exec.Id,

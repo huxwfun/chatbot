@@ -12,9 +12,11 @@ const WorkflowActionBegin WorkflowAction = "begin"
 const WorkflowActionInterrupt WorkflowAction = "interrupt"
 
 type Workflow struct {
-	Id    string
-	Name  string
-	Graph Graph
+	Id                 string
+	Name               string
+	Graph              Graph
+	StateListener      string
+	InboundMsgListener string
 }
 
 type WorkflowExecution struct {
