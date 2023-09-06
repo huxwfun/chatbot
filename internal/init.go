@@ -8,6 +8,7 @@ import (
 	"huxwfun/chatbot/internal/nlp"
 	"huxwfun/chatbot/internal/storage"
 	"huxwfun/chatbot/internal/workflow"
+	"huxwfun/chatbot/internal/workflow/instruction"
 	"huxwfun/chatbot/internal/workflow/review"
 	"huxwfun/chatbot/internal/ws"
 	"log"
@@ -45,10 +46,18 @@ func InitData(
 		storage.Chat.Save(ctx, chat.Id, chat)
 	}
 	log.Printf("data initiated, 3 users, 1 bot and 3 chats")
-	id := REVIEW_WORKFLOW_ID
-	workflow := review.ReviewWorkflow
-	workflow.Id = id
-	storage.Workflow.Save(ctx, id, workflow)
+	{
+		id := REVIEW_WORKFLOW_ID
+		workflow := review.ReviewWorkflow
+		workflow.Id = id
+		storage.Workflow.Save(ctx, id, workflow)
+	}
+	{
+		id := INSTRUCTION_WORKFLOW_ID
+		workflow := instruction.InstructionWorkflow
+		workflow.Id = id
+		storage.Workflow.Save(ctx, id, workflow)
+	}
 	return CHATBOG
 }
 
@@ -66,6 +75,7 @@ func RegisterWorkflow(
 	storage *storage.Storage) {
 	workflows := storage.Workflow.GetAll(ctx)
 	for _, wf := range workflows {
+		// let's pretend there's DI system to create instance from string
 		if wf.InboundMsgListener == "review.ReviewInboundMsgListener" {
 			inboundMsgListener := review.ReviewInboundMsgListener{
 				Executor:   executor,
@@ -79,6 +89,20 @@ func RegisterWorkflow(
 				NlpService: nlpService,
 			}
 			executor.RegisterStateListener(wf.Id, stateListener)
+		}
+		if wf.StateListener == "instruction.InstructionStateListener" {
+			inboundMsgListener := instruction.InstructionStateListener{
+				Executor:   executor,
+				NlpService: nlpService,
+			}
+			executor.RegisterStateListener(wf.Id, inboundMsgListener)
+		}
+		if wf.InboundMsgListener == "instruction.InstructionInboundMsgListener" {
+			stateListener := instruction.InstructionInboundMsgListener{
+				Executor:   executor,
+				NlpService: nlpService,
+			}
+			executor.RegisterInboundMsgListener(wf.Id, stateListener)
 		}
 	}
 }
@@ -96,6 +120,15 @@ func InitWebsocketServer(
 		chat := storage.Chat.FindByUserAndBot(ctx, userId, reviewBot.Id)
 		executionId := executor.CreateExecution(ctx, REVIEW_WORKFLOW_ID, userId, reviewBot.Id, chat.Id)
 		log.Printf("start review execution %s", executionId)
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+	}
+
+	handleInstruction := func(w http.ResponseWriter, r *http.Request) {
+		ctx := context.Background()
+		userId := r.URL.Query().Get("authentication")
+		chat := storage.Chat.FindByUserAndBot(ctx, userId, reviewBot.Id)
+		executionId := executor.CreateExecution(ctx, INSTRUCTION_WORKFLOW_ID, userId, reviewBot.Id, chat.Id)
+		log.Printf("start instruction execution %s", executionId)
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 	}
 
@@ -131,5 +164,5 @@ func InitWebsocketServer(
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Write([]byte(output))
 	}
-	return ws.NewWsServer(dispatcher, storage, handleReview, handleLog)
+	return ws.NewWsServer(dispatcher, storage, handleReview, handleInstruction, handleLog)
 }

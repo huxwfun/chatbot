@@ -29,6 +29,8 @@ var CHATBOG = models.User{
 
 var REVIEW_WORKFLOW_ID = "86fe916a-531b-4216-bc7e-69122c6d91a4"
 
+var INSTRUCTION_WORKFLOW_ID = "ee2e96e5-7439-e749-6be1-f12b6f43d775"
+
 var CHATS = []models.BotChat{
 	{
 		Id:         "6cd26eb5-dc0b-4c28-b1dc-33f5389e6e41",

@@ -117,6 +117,14 @@ export default function HomePage() {
             </ListItem>
             <ListItem disablePadding>
               <ListItemButton component={Link} href='/' onClick={async () => {
+                const output: any = await fetch(`http://localhost:8080/instruction?authentication=${data.me.id}`).then(res => res.text())
+                setLogs(output)
+              }}>
+                <ListItemText primary={'See instruction!'} />
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton component={Link} href='/' onClick={async () => {
                 const output: any = await fetch(`http://localhost:8080/logs?authentication=${data.me.id}`).then(res => res.text())
                 setLogs(output)
               }}>

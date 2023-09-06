@@ -60,7 +60,7 @@ Material UI
 Next.js
 
 ## Grossories
-## [Models](https://github.com/huxwfun/chatbot/tree/main/internal/models)
+[Models](https://github.com/huxwfun/chatbot/tree/main/internal/models)
 - Chat (represents user-bot conversation)
 - Message (messages sent in chats)
 - User (both users and bots)

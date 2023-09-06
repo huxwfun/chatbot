@@ -19,22 +19,25 @@ const BOT_CHAT_OUTBOUND_MSG = "BOT_CHAT_OUTBOUNT_MSG"
 var addr = flag.String("addr", ":8080", "http service address")
 
 type WsServer struct {
-	dispatcher   *event.Dispatcher
-	storage      *storage.Storage
-	handleReview func(http.ResponseWriter, *http.Request)
-	handleLog    func(http.ResponseWriter, *http.Request)
+	dispatcher        *event.Dispatcher
+	storage           *storage.Storage
+	handleReview      func(http.ResponseWriter, *http.Request)
+	handleInstruction func(http.ResponseWriter, *http.Request)
+	handleLog         func(http.ResponseWriter, *http.Request)
 }
 
 func NewWsServer(
 	dispatcher *event.Dispatcher,
 	storage *storage.Storage,
 	handleReview func(http.ResponseWriter, *http.Request),
+	handleInstruction func(http.ResponseWriter, *http.Request),
 	handleLog func(http.ResponseWriter, *http.Request),
 ) *WsServer {
 	return &WsServer{
 		dispatcher,
 		storage,
 		handleReview,
+		handleInstruction,
 		handleLog,
 	}
 }
@@ -116,6 +119,7 @@ func (ws *WsServer) Start() {
 		}
 	})
 	http.HandleFunc("/review", ws.handleReview)
+	http.HandleFunc("/instruction", ws.handleInstruction)
 	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		serveWs(w, r, ws.dispatcher)
 	})

@@ -1,7 +1,8 @@
-package review
+package instruction
 
 import (
 	"context"
+	"fmt"
 	"huxwfun/chatbot/internal/models"
 	"huxwfun/chatbot/internal/nlp"
 	"huxwfun/chatbot/internal/utils"
@@ -10,18 +11,18 @@ import (
 	"time"
 )
 
-type ReviewStateListener struct {
+type InstructionStateListener struct {
 	Executor   *workflow.WorkflowExecutor
 	NlpService *nlp.NlpService
 }
 
-type ReviewInboundMsgListener struct {
+type InstructionInboundMsgListener struct {
 	workflow.StateListener
 	Executor   *workflow.WorkflowExecutor
 	NlpService *nlp.NlpService
 }
 
-func (l ReviewStateListener) Listen(e any) {
+func (l InstructionStateListener) Listen(e any) {
 	ctx := context.Background()
 	event, ok := e.(workflow.StateEvent)
 	if !ok {
@@ -29,8 +30,9 @@ func (l ReviewStateListener) Listen(e any) {
 		return
 	}
 	var (
-		action = event.Action
-		state  = event.StateAfter
+		action        = event.Action
+		actionPayload = event.ActionPayload
+		state         = event.StateAfter
 	)
 	exec, ok := l.Executor.Storage.WorkflowExecution.Get(ctx, event.ExecutionId)
 	if !ok {
@@ -44,18 +46,20 @@ func (l ReviewStateListener) Listen(e any) {
 		TimeCreated: time.Now(),
 	}
 	switch state {
-	case StateToPromptReview:
-		msg.Body = "Hello again! We noticed you've recently received your iPhone 13. We'd love to hear about your experience. Can you spare a few minutes to share your thoughts?"
-		action = ActionBotPromptedReview
-	case StateToAskForRating:
-		msg.Body = "Fantastic! On a scale of 1-5, how would you rate the iPhone 13?"
-		action = ActionBotAskedForRating
-	case StateToSendCompletedGoobye:
-		msg.Body = "Thank you for sharing your feedback! If you have any more thoughts or need assistance with anything else, feel free to reach out!"
-		action = ActionBotSaidGoodbyte
-	case StateToSendInterruptedGoobye:
-		msg.Body = "Thank you for time! See you soon."
-		action = ActionBotSaidGoodbyte
+	case StateToSendOverview:
+		msg.Body = fmt.Sprintf("%s\nReply with 1-7 to see details, 0 for overview again, negative number to quit.", loadReadMe()[0])
+		action = ActionBotSentOverview
+	case StateToSendSection:
+		section, ok := actionPayload.(int)
+		if !ok {
+			log.Printf("wrong action payload %v", actionPayload)
+			return
+		}
+		msg.Body = loadReadMe()[section]
+		action = ActionBotSentSection
+	case StateToSendGoobye:
+		msg.Body = "Thank you for your time! Feel free to reach out!"
+		action = ActionBotSentGoodbye
 	default:
 		return
 	}
@@ -63,7 +67,7 @@ func (l ReviewStateListener) Listen(e any) {
 	l.Executor.Action(ctx, exec, msg.Id, action, nil)
 }
 
-func (l ReviewInboundMsgListener) Listen(event any) {
+func (l InstructionInboundMsgListener) Listen(event any) {
 	ctx := context.Background()
 	msg, ok := event.(workflow.InboundMsgEvent)
 	if !ok {
@@ -79,23 +83,18 @@ func (l ReviewInboundMsgListener) Listen(event any) {
 	var action models.WorkflowAction
 	var actionPayload interface{} = nil
 	switch exec.CurrentState {
-	case StateWaitingForConfirmation:
-		r, ok := l.NlpService.GetBoolResult(ctx, body)
-		if !ok {
-			action = ActionUnknown
-		} else if r {
-			action = ActionUserConfirmed
-			actionPayload = true
-		} else {
-			action = ActionUserRejected
-			actionPayload = false
-		}
-	case StateWaitingForRating:
+	case StateWaitingForSelection:
 		r, ok := l.NlpService.GetIntResult(ctx, body)
 		if !ok {
 			action = ActionUnknown
+		} else if r > 7 {
+			action = ActionUnknown
+			actionPayload = r
+		} else if r < 0 {
+			action = ActionUserChooseDone
+			actionPayload = r
 		} else {
-			action = ActionUserSetRating
+			action = ActionUserSelected
 			actionPayload = r
 		}
 	default:

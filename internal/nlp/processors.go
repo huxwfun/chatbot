@@ -64,10 +64,5 @@ func (s StaticIntProcessor) process(text string) (any, bool) {
 	if err != nil {
 		return 0, false
 	}
-	if result > 5 {
-		result = 5
-	} else if result < 1 {
-		result = 1
-	}
 	return result, true
 }

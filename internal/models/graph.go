@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type Node struct {
 	Id string
@@ -40,9 +43,11 @@ func edgeKey(from, name string) string {
 
 func (g *Graph) AddEdge(from, to, name string) {
 	if _, ok := g.nodes[from]; !ok {
+		log.Printf("node %s is not in graph yet", from)
 		return
 	}
 	if _, ok := g.nodes[to]; !ok {
+		log.Printf("node %s is not in graph yet", to)
 		return
 	}
 	key := edgeKey(from, name)

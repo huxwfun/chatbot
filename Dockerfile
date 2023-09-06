@@ -1,7 +1,7 @@
 FROM golang:1.20-alpine
 
 WORKDIR /app
-COPY go.mod go.sum ./
+COPY go.mod go.sum README.md ./
 RUN go mod download
 COPY cmd ./cmd
 COPY internal ./internal
@@ -14,5 +14,5 @@ RUN go build -o /app/docker-chatbot cmd/main.go
 EXPOSE 8080
 
 # Run
-CMD ["/app/docker-chatbot"]
+CMD ["./docker-chatbot"]
 
