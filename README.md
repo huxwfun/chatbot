@@ -67,3 +67,15 @@ Next.js
 - Workflow (workflow definition)
 - WorkflowExecution (execution of workflow per customer)
 - WorkflowLog (domain events during execution)
+
+[executor listeners](https://github.com/huxwfun/chatbot/blob/main/internal/workflow/executor.go#L29)
+
+It is possible to further break those listeners (inbound message and state change) to workflow nodes/edges/sub-flows
+
+e.x.
+- Instead of programmatically sending msg to customer, use some text to describe those jobs (like DML), let the executor do the job following description
+- Instead of mannualy anaylsis user input message, use DML to describe it too.
+
+Like a fully functional workflow engine.
+
+Maybe some other time.

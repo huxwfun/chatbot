@@ -13,6 +13,7 @@ import (
 	"huxwfun/chatbot/internal/ws"
 	"log"
 	"net/http"
+	"time"
 )
 
 func InitDispatcher(ctx context.Context) *event.Dispatcher {
@@ -138,27 +139,32 @@ func InitWebsocketServer(
 		userId := r.URL.Query().Get("authentication")
 		executions := storage.WorkflowExecution.FindByCustomer(ctx, userId)
 		for _, exec := range executions {
+			workflow, _ := storage.Workflow.Get(ctx, exec.WorkflowId)
 			bot, _ := storage.User.Get(ctx, exec.BotId)
 			user, _ := storage.User.Get(ctx, exec.CustomerId)
-			output = output + fmt.Sprintf("----- start execution %s(bot) to %s(you)-----\n", bot.Name, user.Name)
+			output = output + fmt.Sprintf("## %s(bot) starts %s to %s(you)-----\n", bot.Name, workflow.Name, user.Name)
 			logs := storage.WorkflowLog.FindByExecution(ctx, exec.Id)
 			for _, log := range logs {
-				output = output + fmt.Sprintf("%s\n", log.TimeCreated.Format("15:04:05"))
+				output = output + fmt.Sprintf("#### %s: \n", log.TimeCreated.Format("15:04:05"))
+				output = output + fmt.Sprintf("action: ***%s***, payload: *%v*\n\n", log.Action, log.ActionPayload)
+				output = output + fmt.Sprintf("state: ***%s*** --> ***%s***\n\n", log.StateBefore, log.StateAfter)
 				if len(log.MessageId) > 0 {
 					msg, ok := storage.Chat.GetMessage(ctx, log.MessageId)
+					output = output + fmt.Sprintf("```\n")
 					if ok {
 						if msg.From == user.Id {
-							output = output + fmt.Sprintf("%s send \"%s\" to %s\n", user.Name, msg.Body, bot.Name)
+							output = output + fmt.Sprintf("%s to %s:\n", user.Name, bot.Name)
 						} else {
-							output = output + fmt.Sprintf("%s send \"%s\" to %s\n", bot.Name, msg.Body, user.Name)
+							output = output + fmt.Sprintf("%s to %s:\n", bot.Name, user.Name)
 						}
+						output = output + fmt.Sprintf("%s\n", msg.Body)
 					} else {
 						output = output + fmt.Sprintf("msg (%s) is missing\n", msg.Id)
 					}
+					output = output + fmt.Sprintf("```\n")
 				}
-				output = output + fmt.Sprintf("state: \"%s\"-->\"%s\" action(%s, payload: %v)\n\n", log.StateBefore, log.StateAfter, log.Action, log.ActionPayload)
 			}
-			output = output + fmt.Sprintf("----- end execution current state(%s) -----\n\n", exec.CurrentState)
+			output = output + fmt.Sprintf("#### %s current state ***%s***\n", time.Now().Format("15:04:05"), exec.CurrentState)
 
 		}
 		w.Header().Set("Access-Control-Allow-Origin", "*")

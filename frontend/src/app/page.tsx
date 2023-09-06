@@ -14,7 +14,9 @@ import ListItemText from '@mui/material/ListItemText';
 import Link from 'next/link';
 import Divider from '@mui/material/Divider';
 import Modal from '@mui/material/Modal';
-import Typography from '@mui/material/Typography';
+import ReactMarkdown from 'react-markdown';
+import Fab from '@mui/material/Fab';
+import NavigationIcon from '@mui/icons-material/Navigation';
 
 export default function HomePage() {
   const [data, setData] = useState<Data>({ users: [], me: USER_ANONYMOUS, messages: [], chats: [] })
@@ -40,7 +42,6 @@ export default function HomePage() {
         setLoading(false)
       })
   }, [])
-  console.log(logs)
   if (error) {
     return (<Box sx={{ display: 'flex' }}>
       <Box sx={{ width: '100%', textAlign: 'center', paddingTop: 10 }}>
@@ -108,31 +109,33 @@ export default function HomePage() {
               })
             }
             <Divider />
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href='/' onClick={() => {
-                fetch(`http://localhost:8080/review?authentication=${data.me.id}`, { method: 'POST' })
-              }}>
-                <ListItemText primary={'Trigger sample review flow!'} />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href='/' onClick={async () => {
-                const output: any = await fetch(`http://localhost:8080/instruction?authentication=${data.me.id}`).then(res => res.text())
-                setLogs(output)
-              }}>
-                <ListItemText primary={'See instruction!'} />
-              </ListItemButton>
-            </ListItem>
-            <ListItem disablePadding>
-              <ListItemButton component={Link} href='/' onClick={async () => {
-                const output: any = await fetch(`http://localhost:8080/logs?authentication=${data.me.id}`).then(res => res.text())
-                setLogs(output)
-              }}>
-                <ListItemText primary={'See all domain event logs'} />
-              </ListItemButton>
-            </ListItem>
           </List>
         )}
+        <Box sx={{ position: 'absolute', bottom: 24 }}>
+          <Fab variant="extended" size="small" sx={{ mt: 5, ml: 1, mr: 1 }}
+            onClick={async () => {
+              const output: any = await fetch(`http://localhost:8080/instruction?authentication=${data.me.id}`).then(res => res.text())
+              setLogs(output)
+            }}>
+            <NavigationIcon color="primary" sx={{ mr: 1 }} />
+            Show instructions!
+          </Fab>
+          <Fab variant="extended" size="small" sx={{ mt: 1, ml: 1, mr: 1 }}
+            onClick={() => {
+              fetch(`http://localhost:8080/review?authentication=${data.me.id}`, { method: 'POST' })
+            }}>
+            <NavigationIcon color="secondary" sx={{ mr: 1 }} />
+            Start review!
+          </Fab>
+          <Fab variant="extended" size="small" sx={{ mt: 1, ml: 1, mr: 1 }}
+            onClick={async () => {
+              const output: any = await fetch(`http://localhost:8080/logs?authentication=${data.me.id}`).then(res => res.text())
+              setLogs(output)
+            }}>
+            <NavigationIcon sx={{ mr: 1 }} />
+            Show event logs
+          </Fab>
+        </Box>
       </Drawer>
       <Modal
         open={logs.length > 0}
@@ -153,13 +156,7 @@ export default function HomePage() {
           maxHeight: '60%',
           overflowY: 'scroll',
         }}>
-          {logs.split('\n').map((l, i) => {
-            if (l.indexOf('---') > -1) {
-              return <Typography key={i} variant="h6" gutterBottom>{l}</Typography>
-            } else {
-              return (<Typography key={i} gutterBottom={l.startsWith('from state')}>{l ? l : ' '}</Typography>)
-            }
-          })}
+          <ReactMarkdown>{logs}</ReactMarkdown>
         </Box>
       </Modal>
     </Box>

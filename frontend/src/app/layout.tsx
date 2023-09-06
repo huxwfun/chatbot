@@ -1,19 +1,10 @@
 import React from 'react';
-import Link from 'next/link';
 import AppBar from '@mui/material/AppBar';
 import Box from '@mui/material/Box';
-import Drawer from '@mui/material/Drawer';
 import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
-import Divider from '@mui/material/Divider';
-import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
-import ListItemButton from '@mui/material/ListItemButton';
-import ListItemText from '@mui/material/ListItemText';
 import DashboardIcon from '@mui/icons-material/Dashboard';
 import ThemeRegistry from '@/components/ThemeRegistry/ThemeRegistry';
-import ListItemAvatar from '@mui/material/ListItemAvatar';
-import Avatar from '@mui/material/Avatar';
 
 export const metadata = {
   title: 'Next.js App Router + Material UI v5',
@@ -40,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </Typography>
             </Toolbar>
           </AppBar>
-          <Drawer
+          {/* <Drawer
             sx={{
               width: DRAWER_WIDTH,
               flexShrink: 0,
@@ -55,15 +46,29 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             variant="permanent"
             anchor="left"
           >
-            <Divider />
+            <Fab variant="extended" sx={{ mt: 5, ml: 1, mr: 1 }}>
+              <NavigationIcon color="primary" sx={{ mr: 1 }} />
+              Show instructions!
+            </Fab>
+            <Fab variant="extended"
+             sx={{ mt: 5, ml: 1, mr: 1 }}
+             onClick={() => {
+              // fetch(`http://localhost:8080/review?authentication=${data.me.id}`, { method: 'POST' })
+            }}>
+              <NavigationIcon color="secondary" sx={{ mr: 1 }} />
+              Start review!
+            </Fab>
+            <Fab variant="extended" sx={{ mt: 5, ml: 1, mr: 1 }}>
+              <NavigationIcon sx={{ mr: 1 }} />
+              Show event logs
+            </Fab>
             <Divider sx={{ mt: 'auto' }} />
-          </Drawer>
+          </Drawer> */}
           <Box
             component="main"
             sx={{
               flexGrow: 1,
               bgcolor: 'background.default',
-              ml: `${DRAWER_WIDTH}px`,
               mt: ['48px', '56px', '64px'],
               pl: 3,
               pr: 3,

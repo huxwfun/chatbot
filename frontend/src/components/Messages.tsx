@@ -1,5 +1,5 @@
 "use client"
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button, Paper, Snackbar } from "@mui/material";
 import { TextInput } from "./TextInput";
 import { MessageLeft, MessageRight } from "./Message";
@@ -77,6 +77,7 @@ var conn: WebSocket
 export default function App({ data: { me, users, messages: original }, chatId }: { data: Data, chatId: string }) {
     const [messages, setMessages] = useState(original.filter(m => m.chatId == chatId).map(m => toDisplayMessage(m, users)))
     const [disconnected, setDisconnected] = useState<boolean>(false)
+    const bottomEl = useRef<any>(null);
 
     useEffect(() => {
         conn = new WebSocket(`ws://localhost:8080/ws?authentication=${me.id}`)
@@ -103,9 +104,13 @@ export default function App({ data: { me, users, messages: original }, chatId }:
             conn.close()
         }
     }, [me])
+    useEffect(() => {
+        bottomEl?.current?.scroll({ top: bottomEl?.current?.scrollHeight, behavior: "smooth"})
+    }, [messages])
+
     return (
         <div id="111" style={styles.container as any}>
-            <Paper id="style-1" sx={styles.messagesBody}>
+            <Paper id="style-1" ref={bottomEl} sx={styles.messagesBody}>
                 {
                     messages.map(m => (
                         m.name == me.name ?

@@ -5,10 +5,8 @@ import (
 	"fmt"
 	"huxwfun/chatbot/internal/models"
 	"huxwfun/chatbot/internal/nlp"
-	"huxwfun/chatbot/internal/utils"
 	"huxwfun/chatbot/internal/workflow"
 	"log"
-	"time"
 )
 
 type InstructionStateListener struct {
@@ -24,67 +22,57 @@ type InstructionInboundMsgListener struct {
 
 func (l InstructionStateListener) Listen(e any) {
 	ctx := context.Background()
-	event, ok := e.(workflow.StateEvent)
-	if !ok {
-		log.Printf("wrong event type")
-		return
-	}
-	var (
-		action        = event.Action
-		actionPayload = event.ActionPayload
-		state         = event.StateAfter
+	workflow.SendBotMsgTemplate(
+		ctx,
+		l.Executor,
+		e,
+		l.createBotMsg,
 	)
-	exec, ok := l.Executor.Storage.WorkflowExecution.Get(ctx, event.ExecutionId)
-	if !ok {
-		log.Printf("execution is missing")
-		return
-	}
-	msg := models.Message{
-		Id:          utils.GenerateId(),
-		ChatId:      exec.ChatId,
-		From:        exec.BotId,
-		TimeCreated: time.Now(),
-	}
-	switch state {
-	case StateToSendOverview:
-		msg.Body = fmt.Sprintf("%s\nReply with 1-7 to see details, 0 for overview again, negative number to quit.", loadReadMe()[0])
-		action = ActionBotSentOverview
-	case StateToSendSection:
-		section, ok := actionPayload.(int)
-		if !ok {
-			log.Printf("wrong action payload %v", actionPayload)
-			return
-		}
-		msg.Body = loadReadMe()[section]
-		action = ActionBotSentSection
-	case StateToSendGoobye:
-		msg.Body = "Thank you for your time! Feel free to reach out!"
-		action = ActionBotSentGoodbye
-	default:
-		return
-	}
-	l.Executor.SendBotMsg(ctx, msg)
-	l.Executor.Action(ctx, exec, msg.Id, action, nil)
 }
 
 func (l InstructionInboundMsgListener) Listen(event any) {
 	ctx := context.Background()
-	msg, ok := event.(workflow.InboundMsgEvent)
-	if !ok {
-		log.Printf("wrong msg type")
-		return
+	workflow.ReceiveUserMsgTemplate(
+		ctx,
+		l.Executor,
+		event,
+		l.processUserMsg,
+	)
+}
+
+func (l *InstructionStateListener) createBotMsg(
+	ctx context.Context,
+	event workflow.StateEvent,
+	exec models.WorkflowExecution,
+) (body string, action models.WorkflowAction, payload any) {
+	switch event.StateAfter {
+	case StateToSendOverview:
+		body = fmt.Sprintf("%s\nReply with 1-7 to see details, 0 for overview again, negative number to quit.", loadReadMe()[0])
+		action = ActionBotSentOverview
+	case StateToSendSection:
+		section, ok := event.ActionPayload.(int)
+		if !ok {
+			log.Printf("wrong action payload %v", event.ActionPayload)
+			return
+		}
+		body = fmt.Sprintf("This is section %d. \n\n%s\nReply with 1-7 to see details, 0 for overview again, negative number to quit.", section, loadReadMe()[section])
+		action = ActionBotSentSection
+	case StateToSendGoobye:
+		body = "Thank you for your time! Feel free to reach out!"
+		action = ActionBotSentGoodbye
+	default:
 	}
-	body := msg.Body
-	exec, ok := l.Executor.Storage.WorkflowExecution.Get(ctx, msg.ExecutionId)
-	if !ok {
-		log.Printf("execution %s is missing", msg.ExecutionId)
-		return
-	}
-	var action models.WorkflowAction
-	var actionPayload interface{} = nil
+	return body, action, payload
+}
+
+func (l *InstructionInboundMsgListener) processUserMsg(
+	ctx context.Context,
+	msg workflow.InboundMsgEvent,
+	exec models.WorkflowExecution,
+) (action models.WorkflowAction, actionPayload any) {
 	switch exec.CurrentState {
 	case StateWaitingForSelection:
-		r, ok := l.NlpService.GetIntResult(ctx, body)
+		r, ok := l.NlpService.GetIntResult(ctx, msg.Body)
 		if !ok {
 			action = ActionUnknown
 		} else if r > 7 {
@@ -98,8 +86,6 @@ func (l InstructionInboundMsgListener) Listen(event any) {
 			actionPayload = r
 		}
 	default:
-		return
 	}
-
-	l.Executor.Action(ctx, exec, msg.Id, action, actionPayload)
+	return
 }
