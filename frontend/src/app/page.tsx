@@ -17,6 +17,7 @@ import Modal from '@mui/material/Modal';
 import ReactMarkdown from 'react-markdown';
 import Fab from '@mui/material/Fab';
 import NavigationIcon from '@mui/icons-material/Navigation';
+import { getApiPrefix } from '@/constants';
 
 export default function HomePage() {
   const [data, setData] = useState<Data>({ users: [], me: USER_ANONYMOUS, messages: [], chats: [] })
@@ -25,7 +26,7 @@ export default function HomePage() {
   const [error, setError] = useState(false)
   const [logs, setLogs] = useState('')
   useEffect(() => {
-    fetch('http://localhost:8080/data')
+    fetch(`${getApiPrefix()}/data`)
       .then((res) => res.json())
       .then((d) => {
         const chats = d.chats || []
@@ -114,7 +115,7 @@ export default function HomePage() {
         <Box sx={{ position: 'absolute', bottom: 24 }}>
           <Fab variant="extended" size="small" sx={{ mt: 5, ml: 1, mr: 1 }}
             onClick={async () => {
-              const output: any = await fetch(`http://localhost:8080/instruction?authentication=${data.me.id}`).then(res => res.text())
+              const output: any = await fetch(`${getApiPrefix()}/instruction?authentication=${data.me.id}`).then(res => res.text())
               setLogs(output)
             }}>
             <NavigationIcon color="primary" sx={{ mr: 1 }} />
@@ -122,14 +123,14 @@ export default function HomePage() {
           </Fab>
           <Fab variant="extended" size="small" sx={{ mt: 1, ml: 1, mr: 1 }}
             onClick={() => {
-              fetch(`http://localhost:8080/review?authentication=${data.me.id}`, { method: 'POST' })
+              fetch(`${getApiPrefix()}/review?authentication=${data.me.id}`, { method: 'POST' })
             }}>
             <NavigationIcon color="secondary" sx={{ mr: 1 }} />
             Start review!
           </Fab>
           <Fab variant="extended" size="small" sx={{ mt: 1, ml: 1, mr: 1 }}
             onClick={async () => {
-              const output: any = await fetch(`http://localhost:8080/logs?authentication=${data.me.id}`).then(res => res.text())
+              const output: any = await fetch(`${getApiPrefix()}/logs?authentication=${data.me.id}`).then(res => res.text())
               setLogs(output)
             }}>
             <NavigationIcon sx={{ mr: 1 }} />

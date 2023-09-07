@@ -4,7 +4,9 @@ import { Button, Paper, Snackbar } from "@mui/material";
 import { TextInput } from "./TextInput";
 import { MessageLeft, MessageRight } from "./Message";
 import { v4 as uuid } from 'uuid'
+import { getWsPrefix } from "@/constants";
 
+const API_PREFIX = process.env.NEXT_PUBLIC_API_PREFIX
 const styles = {
     container: {
         height: "calc(100vh - 64px)",
@@ -73,6 +75,7 @@ export type Data = {
     messages: Message[],
     chats: Chat[]
 }
+
 var conn: WebSocket
 export default function App({ data: { me, users, messages: original }, chatId }: { data: Data, chatId: string }) {
     const [messages, setMessages] = useState(original.filter(m => m.chatId == chatId).map(m => toDisplayMessage(m, users)))
@@ -80,8 +83,7 @@ export default function App({ data: { me, users, messages: original }, chatId }:
     const bottomEl = useRef<any>(null);
 
     useEffect(() => {
-        conn = new WebSocket(`ws://localhost:8080/ws?authentication=${me.id}`)
-        // const conn = new WebSocket("ws://" + document.location.host + "/ws");
+        conn = new WebSocket(`${getWsPrefix()}/ws?authentication=${me.id}`)
         conn.onopen = e => {
             setDisconnected(false)
         };
